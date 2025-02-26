@@ -1,0 +1,40 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/spfx-build/package-solution.schema.json",
+  "solution": {
+    "name": "admindash-board-client-side-solution",
+    "id": "d1492b88-805d-4b56-94bc-9b7c89db458c",
+    "version": "1.0.0.0",
+    "includeClientSideAssets": true,
+    "skipFeatureDeployment": true,
+    "isDomainIsolated": false,
+    "developer": {
+      "name": "",
+      "websiteUrl": "",
+      "privacyUrl": "",
+      "termsOfUseUrl": "",
+      "mpnId": "Undefined-1.20.0"
+    },
+    "metadata": {
+      "shortDescription": {
+        "default": "admindashBoard description"
+      },
+      "longDescription": {
+        "default": "admindashBoard description"
+      },
+      "screenshotPaths": [],
+      "videoUrl": "",
+      "categories": []
+    },
+    "features": [
+      {
+        "title": "admindash-board Feature",
+        "description": "The feature that activates elements of the admindash-board solution.",
+        "id": "511f2728-f46a-48fc-8965-b6c90e5e61ee",
+        "version": "1.0.0.0"
+      }
+    ]
+  },
+  "paths": {
+    "zippedPackage": "solution/admindash-board.sppkg"
+  }
+}

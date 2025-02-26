@@ -1,0 +1,89 @@
+.admin-dashboard {
+  font-family: Arial, sans-serif;
+  padding: 20px;
+  background-color: #0b6767;
+  text-align: center;
+}
+#workbenchPageContent {
+  max-width: 1400px;
+  width: 100%;
+}
+
+.admin-title {
+  font-size: 2rem;
+  margin-bottom: 20px;
+  color: white;
+}
+
+.stats-container {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.stat-box {
+  width: 30%;
+  min-width: 150px;
+  background-color: #fff;
+  padding: 15px;
+  border-radius: 8px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  text-align: center;
+  font-size: 1rem;
+  color: #333;
+}
+
+/* .stat-box:active {
+  background-color: grey;
+} */
+
+
+.charts-container {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+}
+
+.chart-box {
+  width: 45%;
+  min-height: 200px;
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  text-align: center;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: #888;
+  font-size: 1.2rem;
+}
+.chart-table td, th{
+  padding: 5px;
+}
+
+/* @media screen and (min-width: 1024px) {
+  .a_e_50a7110f:not(.b_e_50a7110f) .q_e_50a7110f {
+      display: flex;
+     
+      margin: 0 auto;
+  }
+} */
+
+#spPageCanvasContent [data-automation-id="CanvasZone"], #spPageCanvasContent [data-automation-id="CanvasSection"], #spPageCanvasContent [data-automation-id="CanvasZone-SectionContainer"]{
+  max-width: 1320px !important;
+ padding: 0 !important;
+ margin: 0 auto !important;
+}
+
+
+.swal2-shown.swal2-height-auto {
+  height: 100% !important;
+}
+.grey-row {
+  background-color: grey !important;
+  color: white !important;
+}
+
+

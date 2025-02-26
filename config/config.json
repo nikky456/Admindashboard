@@ -1,0 +1,21 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/spfx-build/config.2.0.schema.json",
+  "version": "2.0",
+  "bundles": {
+    "admindashboard-web-part": {
+      "components": [
+        {
+          "entrypoint": "./lib/webparts/admindashboard/AdmindashboardWebPart.js",
+          "manifest": "./src/webparts/admindashboard/AdmindashboardWebPart.manifest.json"
+        }
+      ]
+    }
+  },
+  "externals": {},
+  "localizedResources": {
+    "AdmindashboardWebPartStrings": "lib/webparts/admindashboard/loc/{locale}.js"
+  }
+}
+
+
+
