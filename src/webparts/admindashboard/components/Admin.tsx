@@ -168,7 +168,7 @@ const [clickedTiles, setClickedTiles] = React.useState(null);
 
       let pending = 0;
       const filteredPendingPayments = res.filter((item: any) => {
-        if (item?.PaymentDue && Number(item.PaymentDue) > 0) {
+        if (item?.PaymentDue && Number(item.PaymentDue) > 0  && item?.isActive !== false) {
           pending += Number(item.PaymentDue);
           return true;
         }
