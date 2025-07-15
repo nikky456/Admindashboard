@@ -32,6 +32,7 @@ const Admin: React.FC = () => {
    const [PaymentdueTotal, setPaymentdueTotal] = React.useState(0);
   const [totalregistrations,settotalregistrations] =  React.useState<any[]>([]);
   const [totaldiscontinue, settotaldiscontinue] = React.useState<any[]>([]);
+  const [totalcontinue, settotalcontinue] = React.useState<any[]>([]);
   const [totalearning,settotalearning] = React.useState(0);
   const [pendingPayments, setPendingPayments] = React.useState<any[]>([]);
    const [totalPending, setTotalPending] = React.useState<number>(0);
@@ -47,7 +48,8 @@ const Admin: React.FC = () => {
  const [selectedsaleschartData, setSelectedsaleschartData] = React.useState<any[]>([]);
  const [chartSelectedsalesMonth, setChartSelectedsalesMonth] = React.useState<string>("");
 const [amountReceived,setamountReceived] = React.useState(0);
-const [clickedTiles, setClickedTiles] = React.useState(null);
+const [activeTile, setActiveTile] = React.useState<string | null>(null);
+
 
 
 
@@ -89,7 +91,8 @@ const [clickedTiles, setClickedTiles] = React.useState(null);
           "Modified",
           "Created",
           "isActive",
-          "Photo"
+          "Photo",
+          "Comment"
         ).expand("Author,Editor")
         .top(4999)
         .get();
@@ -127,24 +130,21 @@ const [clickedTiles, setClickedTiles] = React.useState(null);
       const discontinued: any[] = [];
       
       const filteredDiscontinue = res.filter((item: any) => {
-        if (!item?.EndDate) {
-          return false; 
-        }
-      
-        const discontinuemonth = moment(item.EndDate, "DD/MM/YYYY");
-        const isWithinMonth = discontinuemonth.isBetween(startOfMonth, endOfMonth, "day", "[]");
-        const isOver = moment().isAfter(discontinuemonth, "day");
-        
-       
         const isInactive = item.isActive === false;
       
-       
-        if (isWithinMonth && isOver && isInactive) {
-          discontinued.push(item); 
+        if (!item?.JoiningDate) return false;
+      
+        const joiningDate = moment(item.JoiningDate, "DD/MM/YYYY");
+        const isWithinJoiningMonth = joiningDate.isBetween(startOfMonth, endOfMonth, "day", "[]");
+      
+        if (isInactive && isWithinJoiningMonth) {
+          discontinued.push(item);
         }
       
-        return isWithinMonth && isOver && isInactive;
+        return isInactive && isWithinJoiningMonth;
       });
+      
+      
 
       const totalRegistrationsitem = res.filter((item:any) => item?.JoiningDate);
 
@@ -178,58 +178,60 @@ const [clickedTiles, setClickedTiles] = React.useState(null);
       
       
       const totalDiscontinueditem = res.filter((item: any) => {
-        if (!item?.EndDate) return false;
-      
-        const discontinueDate = moment(item.EndDate, "DD/MM/YYYY");
-        const isOver = moment().isAfter(discontinueDate, "day");
-      
-       
-        const isInactive = item.isActive === false;
-      
-        return isOver && isInactive; 
+        return item.isActive === false;
       });
+      
+
   
-     
+      const totalContinueitem = res.filter((item: any) => item.isActive === true);
+
          
         let  totaPaymentdue = 0;
-        const filteredPaymentdue = res.filter((item: any) => {
-          if (!item?.DueDate) {
-            return false; 
-          }
-        
-          const PaymentdueMonth = moment(item.DueDate, "DD/MM/YYYY");
-          const isWithinMonth = PaymentdueMonth.isBetween(startOfMonth, endOfMonth, "day", "[]");
-          const isOverdue = moment().isAfter(PaymentdueMonth, "day"); 
-          if (isWithinMonth && isOverdue) {
-            const billAmount = Number(item?.BillAmount ?? 0);
-            const paymentDue = Number(item?.PaymentDue ?? 0);
-            totaPaymentdue += billAmount + paymentDue;
-          }
-        
-          return isWithinMonth && isOverdue; 
-        });
-        
+     const filteredPaymentdue = res.filter((item: any) => {
+  if (!item?.DueDate || !item?.isActive) {
+    return false;
+  }
+
+  const dueDate = moment(item.DueDate, "DD/MM/YYYY");
+  const today = moment().startOf("day");
+
+  const isPastDue = dueDate.isBefore(today, "day");
+
+  if (isPastDue) {
+    const billAmount = Number(item?.BillAmount ?? 0);
+    const paymentDue = Number(item?.PaymentDue ?? 0);
+    totaPaymentdue += billAmount + paymentDue;
+  }
+
+  return isPastDue;
+});
+
        
         
         
      
       let calculatedTotal = 0;
-       const filteredByDueDate = res.filter((item: any) => {
-        if (!item?.DueDate) {
-          return false;
+      const today = moment(); 
+      const next7Days = moment().add(7, "days");
+     const filteredByDueDate = res.filter((item: any) => {
+      if (!item?.DueDate || !item?.isActive) {
+        return false;
         }
-        const dueMonth = moment(item.DueDate, "DD/MM/YYYY").subtract(7, "days");
-        const isWithinMonth = dueMonth.isBetween(startOfMonth, endOfMonth, "day", "[]");
-      
-        if (isWithinMonth) {
-          
-          const billAmount = Number(item?.BillAmount ?? 0);
-          const paymentDue = Number(item?.PaymentDue ?? 0);
-          calculatedTotal += billAmount + paymentDue;
-        }
-      
-        return isWithinMonth;
-      });
+
+     const dueDate = moment(item.DueDate, "DD/MM/YYYY");
+
+ 
+     
+     const isWithinNext7Days = dueDate.isBetween(today, next7Days, "day", "[]");
+
+     if (isWithinNext7Days && item.isActive) {
+    const billAmount = Number(item?.BillAmount ?? 0);
+    const paymentDue = Number(item?.PaymentDue ?? 0);
+    calculatedTotal += billAmount + paymentDue;
+    }
+
+      return isWithinNext7Days;
+    });
 
       
       if (!isChartMonth) {
@@ -240,6 +242,7 @@ const [clickedTiles, setClickedTiles] = React.useState(null);
       settotalearning(totalEarnings)
       settotalregistrations(totalRegistrationsitem);
       settotaldiscontinue(totalDiscontinueditem);
+      settotalcontinue(totalContinueitem);
       setUpcomingAmountTotal(calculatedTotal);
       setPaymentdueTotal(totaPaymentdue)
       setDiscontinuedUsers(filteredDiscontinue);
@@ -307,6 +310,7 @@ const [clickedTiles, setClickedTiles] = React.useState(null);
        .items.select("AmountReceived", "JoiningDate")
        .top(4999)
        .get();
+
        setExpenseResData(expenseres); 
 
      
@@ -314,8 +318,10 @@ const [clickedTiles, setClickedTiles] = React.useState(null);
       // let totalExpenses = 0;
      
 
-      const currentMonth = moment();
-     const startMonth = currentMonth.clone().subtract(11, "months"); 
+    const currentMonth = moment().endOf("month");
+const startMonth = currentMonth.clone().subtract(11, "months").startOf("month");
+
+
 
      for (let i = 0; i < 12; i++) {
       const monthYearLabel = startMonth.clone().add(i, "months").format("MM/YY");
@@ -494,10 +500,20 @@ const [clickedTiles, setClickedTiles] = React.useState(null);
     setShowtotalExpenseTable(false)
     setShowFilteredchartTable(false);
     setShowExpenseTable(false)
-    if (discontinuedUsers.length > 0) {
+    if (totaldiscontinue?.length) {
       setIsTable(true);
       setCurrentData(totaldiscontinue);
     }};
+    const showtotalcontinuedUsers = () => {
+    
+      setShowtotalExpenseTable(false)
+      setShowFilteredchartTable(false);
+      setShowExpenseTable(false)
+      if (totalcontinue.length > 0) {
+        setIsTable(true);
+        setCurrentData(totalcontinue);
+      }};
+  
 
 const showDiscontinuedUsers = () => {
     
@@ -583,10 +599,17 @@ const showUpcomingPayments = () => {
   }
  
 
-  const handleTileClick = (key:any, callback:any) => {
-    setClickedTiles(key); // Update the active tile
-    callback(); // Execute the corresponding function
+  const handleTileClick = (key: string, callback: () => void) => {
+    if (activeTile === key) {
+      setActiveTile(null); // Unselect and hide table
+    } else {
+      setActiveTile(key);  // Set active tile and show table
+      callback();          // Load corresponding data
+    }
   };
+  
+  
+  
   return (
     <div className="admin-dashboard">
       <div className="text-end w-100 flex">
@@ -638,7 +661,7 @@ const showUpcomingPayments = () => {
         onClick={() => handleTileClick('totalRegistrations', showtotalUsers)}
         style={{
           cursor: 'pointer',
-          backgroundColor: clickedTiles === 'totalRegistrations' ? 'grey' : 'white',
+          backgroundColor: activeTile === 'totalRegistrations' ? 'grey' : 'white',
         }}
       >
         Total Registrations<br />
@@ -651,7 +674,7 @@ const showUpcomingPayments = () => {
         onClick={() => handleTileClick('totalExpenses', handleShowTotalExpenseTable)}
         style={{
           cursor: 'pointer',
-          backgroundColor: clickedTiles ==='totalExpenses' ? 'grey' : 'white',
+          backgroundColor: activeTile ==='totalExpenses' ? 'grey' : 'white',
         }}
       >
         Total Expenses<br />
@@ -659,15 +682,26 @@ const showUpcomingPayments = () => {
       </div>
 
       <div
-        className="stat-box"
+        className="stat-box continue-box1"
         onClick={() => handleTileClick('totalDiscontinued', showtotalDiscontinuedUsers)}
         style={{
           cursor: 'pointer',
-          backgroundColor: clickedTiles === 'totalDiscontinued' ? 'grey' : 'white',
+          backgroundColor: activeTile === 'totalDiscontinued' ? 'grey' : 'white',
         }}
       >
         Total Discontinued<br />
         {totaldiscontinue?.length || 0}
+      </div>
+      <div
+        className="stat-box continue-box1"
+        onClick={() => handleTileClick('totalcontinued', showtotalcontinuedUsers)}
+        style={{
+          cursor: 'pointer',
+          backgroundColor: activeTile === 'totalcontinued' ? 'grey' : 'white',
+        }}
+      >
+        Total Active<br />
+        {totalcontinue?.length || 0}
       </div>
        
       <div
@@ -675,7 +709,7 @@ const showUpcomingPayments = () => {
         onClick={() => handleTileClick('newRegistrations', showAllUsers)}
         style={{
           cursor: 'pointer',
-          backgroundColor: clickedTiles==='newRegistrations' ? 'grey' : 'white',
+          backgroundColor: activeTile==='newRegistrations' ? 'grey' : 'white',
         }}
       >
         New Registrations<br />
@@ -687,10 +721,12 @@ const showUpcomingPayments = () => {
         onClick={() => handleTileClick('pendingPayments', showPendingUsers)}
         style={{
           cursor: 'pointer',
-          backgroundColor: clickedTiles ==='pendingPayments' ? 'grey' : 'white',
+          backgroundColor: activeTile ==='pendingPayments' ? 'grey' : 'white',
         }}
       >
         Total Pending Payments<br />
+        {pendingPayments.length}
+        <span style={{ fontWeight: 'bold' }}> / </span>
         {'\u20B9'}{totalPending}
       </div>
       <div
@@ -698,7 +734,7 @@ const showUpcomingPayments = () => {
         onClick={() => handleTileClick('expenseAmount', handleShowExpenseTable)}
         style={{
           cursor: 'pointer',
-          backgroundColor: clickedTiles ==='expenseAmount' ? 'grey' : 'white',
+          backgroundColor: activeTile ==='expenseAmount' ? 'grey' : 'white',
         }}
       >
         Expenses Amount<br /> {'\u20B9'} {totalExpenses}
@@ -708,7 +744,7 @@ const showUpcomingPayments = () => {
         onClick={() => handleTileClick('discontinued', showDiscontinuedUsers)}
         style={{
           cursor: 'pointer',
-          backgroundColor: clickedTiles==='discontinued' ? 'grey' : 'white',
+          backgroundColor: activeTile==='discontinued' ? 'grey' : 'white',
         }}
       >
         Discontinued<br />
@@ -719,10 +755,12 @@ const showUpcomingPayments = () => {
         onClick={() => handleTileClick('upcomingPayments', showUpcomingPayments)}
         style={{
           cursor: 'pointer',
-          backgroundColor: clickedTiles==='upcomingPayments' ? 'grey' : 'white',
+          backgroundColor: activeTile==='upcomingPayments' ? 'grey' : 'white',
         }}
       >
         Upcoming Payments<br />
+        {upcomingPayments.length}
+        <span style={{ fontWeight: 'bold' }}> / </span>
         {'\u20B9'}{upcomingAmountTotal}
       </div>
 
@@ -731,7 +769,7 @@ const showUpcomingPayments = () => {
         onClick={() => handleTileClick('paymentDues', showDueDates)}
         style={{
           cursor: 'pointer',
-          backgroundColor: clickedTiles==='paymentDues'? 'grey' : 'white',
+          backgroundColor: activeTile==='paymentDues'? 'grey' : 'white',
         }}
       >
         Payment Dues<br />

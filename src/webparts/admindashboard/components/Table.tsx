@@ -1,11 +1,11 @@
-import * as React from 'react';
+
+import {useState,useEffect,useCallback} from 'react';
 import { Web } from 'sp-pnp-js';
 import '../assets/Admin.css';
 import moment from 'moment';
-
 import { MdDelete } from "react-icons/md";
 import { FaEdit } from "react-icons/fa";
-import { DefaultButton, PrimaryButton, TextField , Dropdown, IDropdownOption,Modal} from '@fluentui/react';
+import { DefaultButton, PrimaryButton, TextField , Dropdown, IDropdownOption,} from '@fluentui/react';
 import { Panel ,PanelType  } from '@fluentui/react/lib/Panel';
 import { Checkbox } from '@fluentui/react';
 import Swal from 'sweetalert2';
@@ -13,6 +13,8 @@ import { RxCross2 } from "react-icons/rx";
 import { FaAngleUp } from "react-icons/fa";
 import { FaAngleDown } from "react-icons/fa";
 import { useReactTable, flexRender, getCoreRowModel, getSortedRowModel, getFilteredRowModel, } from '@tanstack/react-table';
+import React from 'react';
+import Paymenthistory from './Paymenthistory';
 
 // interface TableProps {
 //   tableData: any[];
@@ -30,12 +32,12 @@ type MedicalDetail = {
   Others: string;
 };
 
-type Paymenthistory={
-  PaymentDate:string;
-  Amount:string;
-  Status:string;
-  MembershipPlan:string
-}
+// type Paymenthistory={
+//   PaymentDate:string;
+//   Amount:string;
+//   Status:string;
+//   MembershipPlan:string
+// }
 interface ClientItem {
   Id: number;
   FirstName: string;
@@ -53,7 +55,7 @@ interface ClientItem {
   JoiningDate: string | null ; 
   BillAmount: number;
   MedicalDetails: MedicalDetail[];
-  PaymentHistory:Paymenthistory[];
+  // PaymentHistory:Paymenthistory[];
   BMIDate: string | null; 
   NextBMIDueDate: string | null; 
   MembershipNo: string;
@@ -61,33 +63,42 @@ interface ClientItem {
   DueDate: string|null;
   PaymentDue:string,
   Photo:string,
+  Comment:string
 }
 const Table = (tableData: any) =>  {
   let currentMonth = tableData?.selectedMonth
-  const [data, setData] = React.useState<ClientItem[]>([]);
-  const [isPanelOpen, setIsPanelOpen] = React.useState(false);
-  const [isModalOpen, setIsModalOpen] = React.useState(false);
- const [editId, setEditId] = React.useState<number | null>(null);
- const [modalData, setModalData] = React.useState<{ PaymentDate: string; Amount: string; Status: string ,MembershipPlan:string}[]>([]);
- const [Createdname,setCreatedname] = React.useState();
-  const [Createddate,setCreateddate] = React.useState();
-  const [Modifiedname,setModifiedname] = React.useState();
-  const [Modifiedate,setModifieddate] = React.useState();
-  const [isActive, setIsActive] = React.useState(true);
-  const [selectimage, setSelectedimage] = React.useState<File | null>(null);
-  const [currimage, setCurrimage] = React.useState<File | null>(null);
-  const [columnFilters, setColumnFilters] = React.useState<{ id: string; value: string }[]>([]);
+  const [data, setData] = useState<ClientItem[]>([]);
+  const [isPanelOpen, setIsPanelOpen] = useState(false);
+  // const [isModalOpen, setIsModalOpen] = useState(false);
+ const [editId, setEditId] = useState<number | null>(null);
+//  const [modalData, setModalData] = useState<{ PaymentDate: string; Amount: string; Status: string ,MembershipPlan:string}[]>([]);
+ const [Createdname,setCreatedname] = useState();
+  const [Createddate,setCreateddate] = useState();
+  const [Modifiedname,setModifiedname] = useState();
+  const [Modifiedate,setModifieddate] = useState();
+  const [isActive, setIsActive] = useState(true);
+  const [selectimage, setSelectedimage] = useState<File | null>(null);
+  const [currimage, setCurrimage] = useState<File | null>(null);
+  const [columnFilters, setColumnFilters] = useState<{ id: string; value: string }[]>([]);
+  const [sorting, setSorting] = useState([
+  { id: "MembershipNo", desc: true }
+]);
+const [membershipNo, setMembershipNo] = useState<number | null>(null);
+const [showPaymentHistory, setShowPaymentHistory] = useState(false);
+const [paymentHistoryData, setPaymentHistoryData] = useState<any[]>([]);
 
 
 
-const [newDetail, setNewDetail] = React.useState({
-  PaymentDate: "",
-  Amount: "",
-  Status: "",
-  MembershipPlan:""
-});
 
-const [inputValue, setInputValue] = React.useState({
+
+// const [newDetail, setNewDetail] = useState({
+//   PaymentDate: "",
+//   Amount: "",
+//   Status: "",
+//   MembershipPlan:""
+// });
+
+const [inputValue, setInputValue] = useState({
     Id: 0,
     FirstName:'',
     Title:'',
@@ -106,11 +117,13 @@ const [inputValue, setInputValue] = React.useState({
     AmountReceived:0,
     PaymentStatus:'',
     PaymentDue:'',
+    Comment:'',
     PaymentHistory:[{
-      PaymentDate:'',
-      Amount:'',
-      Status:"",
-      MembershipPlan:""
+    Amount: "",
+    Paymentmode: "",
+    Date: "",
+    status: "",
+    comments: "",
       
     }],
     MedicalDetails:[{
@@ -128,19 +141,20 @@ const [inputValue, setInputValue] = React.useState({
    
   })
  
-  const handleOpenModal = () => {
-    if (inputValue?.PaymentHistory?.length) {
-      setNewDetail(inputValue.PaymentHistory[0]); 
-    } else {
-      setNewDetail({ PaymentDate: "", Amount: "", Status: "", MembershipPlan:"" }); 
-    }
-    setIsModalOpen(true);
-  };
+//   const handleOpenModal = () => {
+//     if (inputValue?.PaymentHistory?.length) {
+//       setNewDetail(inputValue.PaymentHistory[0]); 
+//     } else {
+//       setNewDetail({ PaymentDate: "", Amount: "", Status: "", MembershipPlan:"" }); 
+//     }
+//     setIsModalOpen(true);
+//   };
   
   
-const handleCloseModal = () => setIsModalOpen(false);
+// const handleCloseModal = () => setIsModalOpen(false);
 
   
+
   const fetchAPIData = async () => {
     try {
       const web = new Web("https://smalsusinfolabs.sharepoint.com/sites/F4S");
@@ -177,7 +191,8 @@ const handleCloseModal = () => setIsModalOpen(false);
           "Modified",
           "Created",
           "isActive",
-          "Photo"
+          "Photo",
+          "Comment"
         ).expand("Author,Editor")
         .top(4999)
         .get();
@@ -186,8 +201,8 @@ const handleCloseModal = () => setIsModalOpen(false);
         val.JoiningDate = val.JoiningDate
           ? moment(val.JoiningDate).format("DD/MM/YYYY")
           : null;
-        val.EndDate = val.EndDate
-          ? moment(val.EndDate).format("DD/MM/YYYY")
+          val.EndDate = val.JoiningDate && val.MembershipPlan
+          ? moment(calculateautoDate(val.JoiningDate, val.MembershipPlan)).format("DD/MM/YYYY")
           : null;
         val.BMIDate = val.BMIDate
           ? moment(val.BMIDate).format("DD/MM/YYYY")
@@ -195,12 +210,13 @@ const handleCloseModal = () => setIsModalOpen(false);
         val.NextBMIDueDate = val.NextBMIDueDate
           ? moment(val.NextBMIDueDate).format("DD/MM/YYYY")
           : null;
-  
-       
-        val.DueDate = calculateDueDate(val.JoiningDate, val.MembershipPlan);
+       val.DueDate = val.JoiningDate && val.MembershipPlan
+          ? moment(calculateautoDate(val.JoiningDate, val.MembershipPlan)).format("DD/MM/YYYY")
+          : null;
       });
   
       setData(res);
+      setPaymentHistoryData(res);
     } catch (error) {
       console.error("Error fetching data:", error);
     }
@@ -208,27 +224,29 @@ const handleCloseModal = () => setIsModalOpen(false);
   console.log(data)
 
 
-  const calculateDueDate = (JoiningDate: any, MembershipPlan: any) => {
+  const calculateautoDate = (JoiningDate: any, MembershipPlan: any) => {
     if (!JoiningDate) return "";
+    let date = moment(JoiningDate, ["YYYY-MM-DD", "DD/MM/YYYY"], true);
+    if (!date.isValid()) return "";
   
-    const date = moment(JoiningDate, "YYYY-MM-DD");
-
     if (!MembershipPlan) {
       return date.add(1, "month").format("YYYY-MM-DD");
     }
+  
     switch (MembershipPlan.toLowerCase()) {
-      case "Annual":
+      case "annual":
         return date.add(1, "year").format("YYYY-MM-DD");
-      case "Bi-Annual":
+      case "bi-annual":
         return date.add(6, "months").format("YYYY-MM-DD");
-      case "Quarterly":
+      case "quarterly":
         return date.add(3, "months").format("YYYY-MM-DD");
-      case "Monthly":
+      case "monthly":
         return date.add(1, "month").format("YYYY-MM-DD");
       default:
         return "";
     }
   };
+  
   
 
 
@@ -316,7 +334,7 @@ const handleDeleteTask = async (id: number) => {
   });
 };
   
-  React.useEffect(() => {
+  useEffect(() => {
   fetchAPIData();
   }, []);
 
@@ -325,83 +343,76 @@ const handleDeleteTask = async (id: number) => {
   // }, [tableData]); 
   
 
- 
+  console.log(paymentHistoryData)
 
   const updateDetails = async (id: number) => {
-    let hyperlinkValue: any = null;
+  let hyperlinkValue: any = null;
 
-if (selectimage) {
-  try {
-    const { fileUrl, fileName } = await uploadFileToLibrary(
-      selectimage,
-      "UserImage",
-      "UserDashboard"
-    );
-
-    if (fileUrl) {
-      hyperlinkValue = { Url: fileUrl, Description: fileName };
-    } else {
-      console.error("File upload failed: No URL returned.");
-    }
-  } catch (error) {
-    console.error("Error uploading file:", error);
-  }
-}
-    
+  if (selectimage) {
     try {
-     const web = new Web('https://smalsusinfolabs.sharepoint.com/sites/F4S');
-      await web.lists.getById('3A9C0B25-B14D-4277-99CB-D63FCFF5FD3F').items.getById(id).update({
-         FirstName: inputValue.FirstName,
-          Title: inputValue.Title,
-          FullName: inputValue.FullName,
-          Email: inputValue.Email,
-          Age: inputValue?.Age?inputValue.Age:0,
-          BillAmount:inputValue?.BillAmount?inputValue.BillAmount:0,
-          Gender: inputValue.Gender,
-          AadhaarNumber: inputValue?.AadhaarNumber ? inputValue?.AadhaarNumber:0,
-          CellPhone: inputValue.CellPhone,
-          PaymentDue:inputValue.PaymentDue,
-          MembershipPlan:inputValue.MembershipPlan,
-          WorkAddress: inputValue.WorkAddress,
-          JoiningDate: inputValue.JoiningDate
-          ? new Date(inputValue.JoiningDate).toISOString()
-          : null,
-          EndDate: inputValue.EndDate
-          ? new Date(inputValue.EndDate).toISOString()
-          : null,
-          PaymentMode:inputValue.PaymentMode,
-          AmountReceived: inputValue.AmountReceived ? inputValue.AmountReceived:null,
-          MedicalDetails: JSON.stringify(inputValue?.MedicalDetails),
-          PaymentHistory:JSON.stringify(inputValue.PaymentHistory),
-          BMIDate: inputValue.BMIDate
-          ? new Date(inputValue.BMIDate).toISOString()
-          : null,
-        NextBMIDueDate: inputValue.NextBMIDueDate
-          ? new Date(inputValue.NextBMIDueDate).toISOString()
-          : null,
-          DueDate: inputValue.DueDate
-          ? new Date(inputValue.DueDate).toISOString()
-          : null,
-          isActive: isActive,
-          Photo: hyperlinkValue || null,
-        });
-     
-      setIsPanelOpen(false);
-      setEditId(null)
-     
-    
-      tableData.fetchUserData(currentMonth); 
+      const { fileUrl, fileName } = await uploadFileToLibrary(
+        selectimage,
+        "UserImage",
+        "UserDashboard"
+      );
 
-      // fetchUserData(selectedMonth); 
+      if (fileUrl) {
+        hyperlinkValue = { Url: fileUrl, Description: fileName };
+      } else {
+        console.error("File upload failed: No URL returned.");
+      }
     } catch (error) {
-      console.error('Error updating item:', error);
-
+      console.error("Error uploading file:", error);
     }
-  };
+  }
+
+  try {
+    const web = new Web('https://smalsusinfolabs.sharepoint.com/sites/F4S');
+    const list = web.lists.getById('3A9C0B25-B14D-4277-99CB-D63FCFF5FD3F');
+       inputValue.PaymentHistory = paymentHistoryData;
+    await list.items.getById(id).update({
+      FirstName: inputValue.FirstName,
+      Title: inputValue.Title,
+      FullName: inputValue.FullName,
+      Email: inputValue.Email,
+      Age: inputValue?.Age ? inputValue.Age : 0,
+      BillAmount: inputValue?.BillAmount ? inputValue.BillAmount : 0,
+      Gender: inputValue.Gender,
+      AadhaarNumber: inputValue?.AadhaarNumber ? inputValue?.AadhaarNumber : 0,
+      CellPhone: inputValue.CellPhone,
+      PaymentDue: inputValue.PaymentDue,
+      MembershipPlan: inputValue.MembershipPlan,
+      WorkAddress: inputValue.WorkAddress,
+      Comment: inputValue?.Comment || "",
+      JoiningDate: inputValue.JoiningDate ? new Date(inputValue.JoiningDate).toISOString() : null,
+      EndDate: inputValue.EndDate ? new Date(inputValue.EndDate).toISOString() : null,
+      PaymentMode: inputValue.PaymentMode,
+      AmountReceived: inputValue.AmountReceived ? inputValue.AmountReceived : null,
+      MedicalDetails: JSON.stringify(inputValue?.MedicalDetails),
+      BMIDate: inputValue.BMIDate ? new Date(inputValue.BMIDate).toISOString() : null,
+      NextBMIDueDate: inputValue.NextBMIDueDate ? new Date(inputValue.NextBMIDueDate).toISOString() : null,
+      DueDate: inputValue.DueDate ? new Date(inputValue.DueDate).toISOString() : null,
+      isActive: isActive,
+      Photo: hyperlinkValue || null,
+       PaymentHistory: paymentHistoryData.length > 0 ? JSON.stringify(paymentHistoryData) : undefined,
+
+    });
+
+    setIsPanelOpen(false);
+    setEditId(null);
+    tableData.fetchUserData(currentMonth);
+   
+
+  } catch (error) {
+    console.error('Error updating item:', error);
+  }
+};
+
  const handleEditTask = (task: any) => {
   setEditId(task.Id);
    const parsedRowData = {
         ...task,
+         Comment: task.Comment || "",
         JoiningDate: task.JoiningDate
       ? moment(task.JoiningDate, "DD/MM/YYYY").format("YYYY-MM-DD")
       : null,
@@ -422,12 +433,13 @@ if (selectimage) {
         ? JSON.parse(task.PaymentHistory)
         : [
             {
-              PaymentDate: task.PaymentDate
-              ? moment(task.PaymentDate, "DD/MM/YYYY").format("YYYY-MM-DD")
+              Date: task.Date
+              ? moment(task.Date, "DD/MM/YYYY").format("YYYY-MM-DD")
               : null,
                 Amount: "",
-                Status: "",
-                MembershipPlan:""
+                Paymentmode: "",
+                status: "",
+                comments: "",
             },
         ],
         isActive: task.isActive,
@@ -435,6 +447,7 @@ if (selectimage) {
        
     
     };
+    setMembershipNo(task.MembershipNo || "");
     setCurrimage(task?.Photo?.Url ? task?.Photo?.Url : null);
     setCreatedname(task.Author?.Title || "");
     setCreateddate(task.Created || "");
@@ -447,25 +460,51 @@ if (selectimage) {
     setIsActive(task.isActive);
     // setEditId(null);
 };
+ useEffect(() => {
+    const fetchPaymentHistory = async () => {
+      if (!editId) return;
 
-const handleAddRow = () => {
-  if (newDetail.PaymentDate && newDetail.Amount && newDetail.Status) {
-    setInputValue((prev) => ({
-      ...prev,
-      PaymentHistory: [...(prev.PaymentHistory || []), { ...newDetail }], // Ensure PaymentHistory is always an array
-    }));
+      try {
+        const web = new Web("https://smalsusinfolabs.sharepoint.com/sites/F4S");
+        const res = await web.lists
+          .getByTitle("Clients")
+          .items.select("Id", "PaymentHistory")
+          .top(4999)
+          .get();
 
-    // Reset the newDetail state after adding the row
-    setNewDetail({
-      PaymentDate: "",
-      Amount: "",
-      Status: "",
-      MembershipPlan: "",
-    });
-  } else {
-    console.warn("Fill all payment details before adding a row.");
-  }
-};
+        const user = res.find((item: any) => item.Id === editId);
+
+        if (user?.PaymentHistory) {
+          const parsed = JSON.parse(user.PaymentHistory);
+          const formatted = Array.isArray(parsed) ? parsed : [parsed];
+
+          const data = formatted.map((p: any, index: number) => ({
+            Id: Date.now() + index, // Ensure unique ID
+            Amount: p.Amount || "",
+            Paymentmode: p.Paymentmode || "",
+            Date: p.Date || "",
+            status: p.status || "",
+            comments: p.comments || "",
+          }));
+
+          setPaymentHistoryData(data);
+        } else {
+          setPaymentHistoryData([]);
+        }
+      } catch (err) {
+        console.error("Failed to fetch payment history", err);
+        setPaymentHistoryData([]);
+      }
+    };
+
+    fetchPaymentHistory();
+  }, [editId]);
+
+  const handlePaymentHistoryUpdate = (updatedData: PaymentItem[]) => {
+    setPaymentHistoryData(updatedData);
+  };
+
+
 
 const handleSaveTask = async () => {
   try {
@@ -486,12 +525,6 @@ const handleSaveTask = async () => {
     }
 
     
-    setInputValue((prev) => ({
-      ...prev,
-      PaymentHistory: [...prev.PaymentHistory, ...modalData],
-    }));
-
-    // Close the panel
     setIsPanelOpen(false);
   } catch (error) {
     console.error("Error saving task:", error);
@@ -506,22 +539,9 @@ const handleSaveTask = async () => {
 
 
 
-
-const handleSaveModal = () => {
- 
-  setInputValue((prev) => ({
-    ...prev,
-    PaymentHistory: [...prev.PaymentHistory, ...modalData],
-  }));
-
- 
-  setModalData([]);
-
- 
-  setIsModalOpen(false);
-};
-
-
+const handleOpenPaymentHistory = () => {
+    setShowPaymentHistory(prev => !prev);
+  };
 
   const handleClosePanel = () => {
     setInputValue({
@@ -542,11 +562,13 @@ const handleSaveModal = () => {
       BillAmount: 0,
       AmountReceived: 0,
       PaymentStatus:"",
+      Comment:"",
       PaymentHistory:[{
-        PaymentDate:'',
-        Amount:"",
-        Status:"",
-       MembershipPlan:"",
+         Amount: "",
+    Paymentmode: "",
+    Date: "",
+    status: "",
+    comments: "",
         
       }],
       MedicalDetails: [
@@ -570,8 +592,9 @@ const handleSaveModal = () => {
     setIsPanelOpen(false);
   };
 
+
   const handleCheckboxChange = (ev:any, checked:any) => {
-    setIsActive(checked); // Update the isActive state when checkbox is clicked
+    setIsActive(checked); 
   };
 
   
@@ -587,15 +610,23 @@ const handleSaveModal = () => {
       if (field === "FirstName" || field === "Title") {
         updatedState.FullName = `${updatedState.FirstName || ""} ${updatedState.Title || ""}`.trim();
       }
+      
   
-      // Auto-calculate DueDate based on JoiningDate and MembershipPlan
+      // Auto-calculate DueDate and Enddate based on JoiningDate and MembershipPlan
       if (field === "JoiningDate" || field === "MembershipPlan") {
-        updatedState.DueDate = calculateDueDate(
+        const baseDate = calculateautoDate(
           updatedState.JoiningDate as string,
           updatedState.MembershipPlan as string
         );
+      
+        updatedState.DueDate = baseDate
+          ? moment(baseDate).add(7, "days").format("YYYY-MM-DD")
+          : "";
+      
+        updatedState.EndDate = baseDate || "";
       }
-  
+      
+      
      
       if (field === "Photo" && e?.target.files && e.target.files[0]) {
         setSelectedimage(e.target.files[0]);
@@ -612,27 +643,26 @@ const handleSaveModal = () => {
       return updatedState;
     });
   };
-  
 
 
-  const handleMedicalDetailsChange = (field: keyof MedicalDetail, value: any) => {
-    setInputValue((prev) => ({
-      ...prev,
-      MedicalDetails: [
-        {
-          ...prev.MedicalDetails[0],
-          [field]: value,
-        },
-      ],
-    }));
-  };
+  // const handleMedicalDetailsChange = (field: keyof MedicalDetail, value: any) => {
+  //   setInputValue((prev) => ({
+  //     ...prev,
+  //     MedicalDetails: [
+  //       {
+  //         ...prev.MedicalDetails[0],
+  //         [field]: value,
+  //       },
+  //     ],
+  //   }));
+  // };
 
-  const handlepaymentdetailChange = (field: keyof Paymenthistory, value: any) => {
-    setNewDetail((prev) => ({
-      ...prev,
-      [field]: value,
-    }));
-  };
+  // const handlepaymentdetailChange = (field: keyof Paymenthistory, value: any) => {
+  //   setNewDetail((prev) => ({
+  //     ...prev,
+  //     [field]: value,
+  //   }));
+  // };
   
 const genderOptions: IDropdownOption[] = [
     { key: 'Male', text: 'Male' },
@@ -653,11 +683,11 @@ const genderOptions: IDropdownOption[] = [
     { key: 'Cash', text: 'Cash' },
   ];
 
-  const statusOptions:IDropdownOption[] = [
-    { key: "Paid", text: "Paid" },
-    { key: "Unpaid", text: "Unpaid" },
-    { key: "Pending", text: "Pending" },
-  ];
+  // const statusOptions:IDropdownOption[] = [
+  //   { key: "Paid", text: "Paid" },
+  //   { key: "Unpaid", text: "Unpaid" },
+  //   { key: "Pending", text: "Pending" },
+  // ];
 
   const getNextMembershipNo = async () => {
     try {
@@ -720,7 +750,7 @@ const genderOptions: IDropdownOption[] = [
         PaymentMode:inputValue.PaymentMode,
           AmountReceived: inputValue.AmountReceived ? inputValue.AmountReceived:null,
           MedicalDetails: JSON.stringify(inputValue?.MedicalDetails),
-          PaymentHistory:JSON.stringify(inputValue.PaymentHistory),
+          PaymentHistory: inputValue.PaymentHistory.length > 0 ? JSON.stringify(inputValue.PaymentHistory) : undefined,
           BMIDate: inputValue.BMIDate
           ? new Date(inputValue.BMIDate).toISOString()
           : null,
@@ -731,6 +761,7 @@ const genderOptions: IDropdownOption[] = [
           ? new Date(inputValue.DueDate).toISOString()
           : null,
           Photo: hyperlinkValue || null,
+          Comment:inputValue.Comment || "",
         };
         const web = new Web("https://smalsusinfolabs.sharepoint.com/sites/F4S");
         let res = await web.lists
@@ -756,6 +787,7 @@ const genderOptions: IDropdownOption[] = [
           PaymentMode:"",
           BillAmount: 0,
           AmountReceived: 0,
+          Comment:"",
           PaymentStatus:"",
           MedicalDetails:[{
             BloodGroup:"",
@@ -766,10 +798,11 @@ const genderOptions: IDropdownOption[] = [
         
          }],
          PaymentHistory:[{
-          PaymentDate:'',
-          Amount:"",
-          Status:"",
-          MembershipPlan:""
+            Amount: "",
+            Paymentmode: "",
+            Date: "",
+           status: "",
+           comments: "",
           
         }],
          BMIDate:"",
@@ -788,8 +821,10 @@ const genderOptions: IDropdownOption[] = [
     
   };
 
- const handleNewTask = () => {
-      
+ const handleNewTask =  async(userId:any) => {
+   const nextNo = await getNextMembershipNo();
+       setMembershipNo(nextNo);
+     
         setInputValue({
           Id: 0,
           FirstName: "",
@@ -808,6 +843,7 @@ const genderOptions: IDropdownOption[] = [
           PaymentMode: "",
           BillAmount: 0,
           AmountReceived: 0,
+          Comment:"",
           PaymentStatus: "",
           MedicalDetails: [{
             BloodGroup: "",
@@ -817,10 +853,11 @@ const genderOptions: IDropdownOption[] = [
             Others: "",
           }],
           PaymentHistory: [{
-            PaymentDate: '',
-            Amount: "",
-            Status: "",
-            MembershipPlan:""
+             Amount: "",
+             Paymentmode: "",
+             Date: "",
+            status: "",
+             comments: "",
           }],
           BMIDate: "",
           NextBMIDueDate: "",
@@ -828,11 +865,13 @@ const genderOptions: IDropdownOption[] = [
           MembershipPlan: "",
           Photo:""
         });
+         
         setEditId(null); 
+        
         setIsPanelOpen(true); 
       };
      
-      const onRenderFooterContent = React.useCallback(
+      const onRenderFooterContent = useCallback(
         () => (
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%" }}>
             {editId != null && (
@@ -886,14 +925,9 @@ const genderOptions: IDropdownOption[] = [
       );
       
       const isDiscontinued = (row: any) => {
-        if (!row?.EndDate) return false;
-    
-        const discontinueDate =  moment(row.EndDate, "DD/MM/YYYY");
-        const isOver = moment().isAfter(discontinueDate, "day");
-        const isInactive = row.isActive === false;
-    
-        return isOver && isInactive;
+        return row?.isActive === false;
       };
+      
 
 
       const columns = [
@@ -987,23 +1021,23 @@ const genderOptions: IDropdownOption[] = [
         },
       ];
       
-      const tabledata= useReactTable({
-        data: tableData?.tableData || [],
-        columns,
-        state: {
-          columnFilters,
-          sorting: [{ id: "MembershipNo", desc: true }], 
-        },
-        onColumnFiltersChange: setColumnFilters,
-        getCoreRowModel: getCoreRowModel(),
-        getSortedRowModel: getSortedRowModel(),
-        getFilteredRowModel: getFilteredRowModel(),
-        initialState: {
-          sorting: [{ id: "MembershipNo", desc: true }], 
-        },
-      });
+     const tabledata = useReactTable({
+  data: tableData?.tableData || [],
+  columns,
+  state: {
+    sorting,
+    columnFilters,
+  },
+  onSortingChange: setSorting, 
+  onColumnFiltersChange: setColumnFilters,
+  getCoreRowModel: getCoreRowModel(),
+  getSortedRowModel: getSortedRowModel(),
+  getFilteredRowModel: getFilteredRowModel(),
+});
+
+
+ 
       
-        
 
      
 
@@ -1016,10 +1050,10 @@ const genderOptions: IDropdownOption[] = [
         New Registration
       </button>
       </div>
-      <Panel
+          <Panel
       isOpen={isPanelOpen}
       onDismiss={handleClosePanel}
-      headerText="Form Details"
+       headerText={`${membershipNo ?? ""}`}
       closeButtonAriaLabel="Close"
       onRenderFooterContent={onRenderFooterContent}
       isFooterAtBottom={true}
@@ -1037,24 +1071,18 @@ const genderOptions: IDropdownOption[] = [
         <div className="container">
           {/* Row 1 */}
           <div className="row align-items-center mb-4">
-          <div className="col">
-              <h6> MembershipNo</h6>
-              <TextField
-               value={inputValue.MembershipNo}
-                disabled
-              />
-            </div>
+  
          <div className="col">
           <h6>First Name</h6>
             <TextField
-      placeholder="Enter First Name"
-      value={inputValue.FirstName}
-      onChange={(e) => handleInputChange("FirstName", e.currentTarget.value)}
-      required
-      errorMessage={!inputValue?.FirstName ? "First name  is required" : ""}
-      autoComplete='off'
-    />
-  </div>
+              placeholder="Enter First Name"
+              value={inputValue.FirstName}
+              onChange={(e) => handleInputChange("FirstName", e.currentTarget.value)}
+              // required
+              // errorMessage={!inputValue?.FirstName ? "First name  is required" : ""}
+              autoComplete='off'
+              />
+           </div>
   
   <div className="col">
     <h6>Last Name</h6>
@@ -1069,13 +1097,22 @@ const genderOptions: IDropdownOption[] = [
   <div className="col">
     <h6>Full Name</h6>
     <TextField
-      placeholder="Enter Full Name"
       value={inputValue.FullName}
+      disabled
 
-      onChange={(e) => handleInputChange("FullName", e.currentTarget.value)}
+      // onChange={(e) => handleInputChange("FullName", e.currentTarget.value)}
        autoComplete='off'
     />
   </div>
+   <div className="col">
+              <h6>Mobile No</h6>
+              <TextField
+                placeholder="Enter Cell Phone"
+                value={inputValue.CellPhone}
+                onChange={(e) => handleInputChange("CellPhone", e.currentTarget.value)}
+                 autoComplete='off'
+              />
+            </div>
             </div>
 
 
@@ -1123,6 +1160,7 @@ const genderOptions: IDropdownOption[] = [
                  autoComplete='off'
               />
             </div>
+           
             
           </div>
 
@@ -1130,29 +1168,8 @@ const genderOptions: IDropdownOption[] = [
           <div className="row align-items-center mb-4">
         
            
-          <div className="col">
-              <h6>Mobile No</h6>
-              <TextField
-                placeholder="Enter Cell Phone"
-                value={inputValue.CellPhone}
-                onChange={(e) => handleInputChange("CellPhone", e.currentTarget.value)}
-                 autoComplete='off'
-              />
-            </div>
-            <div className="col">
-           <h6> Address</h6>
-           <textarea
-           placeholder="Enter Work Address"
-           value={inputValue.WorkAddress}
-          onChange={(e) => handleInputChange("WorkAddress", e.target.value)}
-           rows={2} 
-           style={{
-           width: '100%', 
-           padding: '8px',
-            fontSize: '16px',
-            }}
-        ></textarea>
-               </div>
+         
+           
                <div className="col">
               <h6>Joining Date</h6>
               <TextField
@@ -1160,8 +1177,8 @@ const genderOptions: IDropdownOption[] = [
                 type="date"
                 value={inputValue.JoiningDate}
                 onChange={(e) => handleInputChange("JoiningDate", e.currentTarget.value)}
-                required
-                errorMessage={!inputValue?.JoiningDate ? "Joining date is required" : ""}
+                // required
+                // errorMessage={!inputValue?.JoiningDate ? "Joining date is required" : ""}
               />
             </div>
             <div className="col">
@@ -1173,6 +1190,24 @@ const genderOptions: IDropdownOption[] = [
                 onChange={(e) => handleInputChange("EndDate", e.currentTarget.value)}
               />
             </div>
+            <div className="col">
+              <h6>DueDate</h6>
+              <TextField
+                placeholder="DueDate"
+                 type='date'
+                 value={inputValue.DueDate}
+                onChange={(e) => handleInputChange("DueDate", e.currentTarget.value)}
+              />
+            </div>
+            <div className="col">
+              <h6>MembershipPlan</h6>
+              <Dropdown
+                selectedKey={inputValue.MembershipPlan || null}
+                options={MembershipPlansOptions}
+                onChange={(e, option) => handleInputChange("MembershipPlan", option?.key || "")}
+              />
+            </div>
+           
 
            
            
@@ -1218,19 +1253,20 @@ const genderOptions: IDropdownOption[] = [
          }}
         />
             </div>
+            
             <div className="col">
-              <h6>BMI date</h6>
-              <TextField
-                placeholder="Enter BMIDate"
-                type='date'
-                value={inputValue.BMIDate}
-                onChange={(e) => handleInputChange("BMIDate", e.currentTarget.value)}
+            <h6>Payment Due</h6>
+            <TextField
+            placeholder="PaymentDue"
+            type="text"
+            value={inputValue.PaymentDue}
+            onChange={(e) => handleInputChange("PaymentDue", e.currentTarget.value)}
               />
             </div>
            
           </div>
           {/* Row 5 */}
-          <div className="row align-items-center mb-4">
+          {/* <div className="row align-items-center mb-4">
           <div className="col-12">
           <h6>Medical Details</h6>
           
@@ -1314,132 +1350,118 @@ const genderOptions: IDropdownOption[] = [
            </div>
 
       </div>
-      </div>
+      </div> */}
      
       
-             {/* row-6 */}
-             <div className="row align-items-center mb-4">
-             <div className="col">
-              <h6>NextBMIDueDate</h6>
-              <TextField
-                placeholder="Enter NextBMIDueDate"
-                 type='date'
-                 value={inputValue.NextBMIDueDate}
-                onChange={(e) => handleInputChange("NextBMIDueDate", e.currentTarget.value)}
-              />
-            </div>
-             
-             <div className="col">
-              <h6>MembershipPlan</h6>
-              <Dropdown
-                selectedKey={inputValue.MembershipPlan || null}
-                options={MembershipPlansOptions}
-                onChange={(e, option) => handleInputChange("MembershipPlan", option?.key || "")}
-              />
-            </div>
-            <div className="col">
-            <h6>Payment Due</h6>
-            <TextField
-            placeholder="PaymentDue"
-            type="text"
-            value={inputValue.PaymentDue}
-            onChange={(e) => handleInputChange("PaymentDue", e.currentTarget.value)}
-              />
-            </div>
-            <div className="col">
-              <h6>DueDate</h6>
-              <TextField
-                placeholder="DueDate"
-                 type='date'
-                 value={inputValue.DueDate}
-                onChange={(e) => handleInputChange("DueDate", e.currentTarget.value)}
-              />
-            </div>
+            
+    <div className='row align-items-center mb-4'>
 
-              </div>
-           <div className='row align-items-center mb-4'>
-           <div className="col">
-            <h6>Payment Status</h6>
-            <div style={{ display: "flex", alignItems: "center" }}>
-            <TextField
-              readOnly
-             value={inputValue.PaymentStatus || ""}
-            placeholder="Payment Status"
-            styles={{
-           root: {
-           flexGrow: 1, 
-           },
+  {/* Comment */}
+  <div className="col-md-3">
+    <h6>Comment</h6>
+    <textarea
+      value={inputValue.Comment || ""}
+      onChange={(e) => handleInputChange("Comment", e.currentTarget.value)}
+      rows={2}
+      style={{
+        width: '100%',
+        padding: '8px',
+        fontSize: '16px',
+      }}
+    />
+  </div>
+
+  {/* Address */}
+  <div className="col-md-3">
+    <h6>Address</h6>
+    <textarea
+      placeholder="Enter Address"
+      value={inputValue.WorkAddress}
+      onChange={(e) => handleInputChange("WorkAddress", e.target.value)}
+      rows={2}
+      style={{
+        width: '100%',
+        padding: '8px',
+        fontSize: '16px',
+      }}
+    />
+  </div>
+
+  {/* Upload Photo + Active status */}
+  <div className="col-md-3">
+    <div className="form-group m-2">
+      <h6>Upload Photo</h6>
+      {currimage && editId ? (
+        <span>
+          <img
+            src={inputValue?.Photo}
+            alt="Uploaded Preview"
+            style={{
+              width: "50px",
+              height: "50px",
+              objectFit: "cover",
+              border: "1px solid black",
+              borderRadius: "50%",
             }}
-           />
-          <FaEdit
-           style={{
-           marginLeft: "8px",
-           cursor: "pointer",
-           color: "gray",
-           }}
-           onClick={handleOpenModal}
-           />
-         </div>
+          />
+          <RxCross2
+            onClick={deleteimage}
+            style={{
+              fontSize: "16px",
+              marginTop: "-46px",
+              marginLeft: "-5px",
+              color: "black",
+              cursor: "pointer",
+            }}
+          />
+        </span>
+      ) : (
+        <input
+          type="file"
+          className="form-control"
+          name="Photo"
+          onChange={(e) => handleInputChange("Photo", e.target.files, e)}
+          autoComplete="off"
+        />
+      )}
+    </div>
+    </div>
 
+    {editId !== null && (
+      <div className="col-md-3">
+        <h6>Active</h6>
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+          <Checkbox label="Yes" checked={isActive} onChange={handleCheckboxChange} />
+          <Checkbox label="No" checked={!isActive} onChange={handleCheckboxChange} />
+        </div>
+      </div>
+    )}
+
+
+</div>
+
+    <div>
+      <div className='row align-items-center mb-4'>
+        <div className="col-md-3">
+          {/* <h6>Payment history</h6> */}
+          <div style={{ display: "flex", alignItems: "center" }}>
+            <DefaultButton
+              text={showPaymentHistory ? "Payment History" : "Payment History"}
+              onClick={handleOpenPaymentHistory}
+            />
           </div>
-          
-          {editId !== null && (
-         <div className="col-lg-4">
-         <h6>Active</h6>
-         <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-           <Checkbox label="Yes" checked={isActive} onChange={handleCheckboxChange} />
-           <Checkbox label="No" checked={!isActive} onChange={handleCheckboxChange} />
-         </div>
-       </div>
-       
-       )}
-       
+        </div>
+      </div>
 
-<div className="col-lg-4">
-                <div className="form-group m-2">
-                  <h6>Upload Photo</h6>
-                  {currimage && editId ? (
-                    <span>
-                      <img
-                        src={inputValue?.Photo}
-                        alt="Uploaded Preview"
-                        style={{
-                          width: "50px",
-                          height: "50px",
-                          objectFit: "cover",
-                          border: "1px solid black",
-                          borderRadius: "50%",
-                        }}
-                      />
-                      <RxCross2
-                        onClick={deleteimage}
-                        style={{
-                          fontSize: "16px",
-                          marginTop: "-46px",
-                          marginLeft: "-5px",
-                          color: "black",
-                        }}
-                      />
-                    </span>
-                  ) : (
-                    <input
-                    type="file"
-                    className="form-control"
-                    name="Photo"
-                    onChange={(e) => handleInputChange("Photo", e.target.files, e)}
-                    autoComplete="off"
-                  />
-                  
-                  )}
-                </div>
-              </div>
-         
+      {showPaymentHistory && editId &&(
+         <Paymenthistory
+          userId={editId}
+          paymentHistoryData={paymentHistoryData}
+          onPaymentHistoryUpdate={handlePaymentHistoryUpdate}
+        />
 
-
-         
-         
-
-       </div>
+      )}
+    </div>
        
         
 
@@ -1448,7 +1470,7 @@ const genderOptions: IDropdownOption[] = [
         </div>
 
 
-              <Modal
+              {/* <Modal
            isOpen={isModalOpen}
            onDismiss={handleCloseModal}
           isBlocking={false}
@@ -1537,17 +1559,18 @@ const genderOptions: IDropdownOption[] = [
       <DefaultButton onClick={handleCloseModal}>Cancel</DefaultButton>
     </div>
        </div>
-              </Modal>
-          </Panel>
+              </Modal> */}
+            </Panel>
           <div className="m-3 mb-3 bg-light" style={{ maxHeight: "500px", overflowY: "auto" }}>
-  <table
+          
+         <table  
     className="table-striped table-bordered table-hover bg-light"
     style={{
       borderCollapse: "collapse",
       width: "100%",
       border: "1px solid #ddd",
-    }}
-  >
+      }}
+     >
     <thead>
       {tabledata.getHeaderGroups().map((headerGroup) => (
         <tr key={headerGroup.id}>
